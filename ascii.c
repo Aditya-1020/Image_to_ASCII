@@ -55,7 +55,7 @@ int main(void) {
     stbi_write_png("homer_grey.png", width, height, grey_channels, grey_img, width * grey_channels);
 
 
-    int new_width = 300;
+    int new_width = 100;
     int new_height = height * new_width / width; // maintains aspect ratio
     unsigned char *Resized_img = malloc(new_width * new_height * grey_channels);
     if (Resized_img == NULL){
@@ -65,28 +65,63 @@ int main(void) {
         return 1;
     }
 
-    if (!stbir_resize_uint8_linear(grey_img, width, height, 0, Resized_img, new_width, new_height, 0, grey_channels)){
-        printf("Error resizing image");
+
+    if (!stbir_resize_uint8_linear(grey_img, width, height, 0, Resized_img, new_width, new_height, 0, grey_channels)) {
+        printf("Error resizing image\n");
         free(Resized_img);
         free(grey_img);
         stbi_image_free(Img);
         return 1;
     }
-    
-    if (!stbi_write_png("homer_resized_grayscale.png", new_width, new_height, grey_channels, Resized_img, new_width * grey_channels)) {
-        printf("Error writing resized image\n");
-    } else {
-        printf("Resized image saved as 'resized_grayscale.png'\n");
+
+
+    /*
+    map pixel brightness to ASCII chars " .:-=+*#%@"
+    use str of char darkest to lightest 
+    divide range of possible values (usually 0-255 for 8 bit greyscale)
+    into as many secions as the charecters you have then map each value
+    to its charecter
+    */
+
+
+    // Map pixel brightness to ASCII chars
+    // Map pixel brightness to ASCII chars
+    const char *ascii_chars = " .:-=+*#%@";
+    int num_chars = 10;
+    float segment_size = 256.0 / num_chars;
+
+    // Create a buffer to store the ASCII art
+    char *ascii_art = malloc(new_width * new_height + new_height); // extra space for newlines
+    if (ascii_art == NULL) {
+        printf("Unable to allocate memory for ASCII art\n");
+        free(Resized_img);
+        free(grey_img);
+        stbi_image_free(Img);
+        return 1;
     }
 
-    // Don't forget to free allocated memory
+    char *art_ptr = ascii_art;
+    for (int y = 0; y < new_height; ++y) {
+        for (int x = 0; x < new_width; ++x) {
+            int pixel_value = Resized_img[y * new_width + x];
+            int char_index = (int)(pixel_value / segment_size);
+            *art_ptr++ = ascii_chars[char_index];
+        }
+        *art_ptr++ = '\n';  // Newline at the end of each row
+    }
+    *art_ptr = '\0';  // Null-terminate the string
+
+    // Print the ASCII art
+    printf("%s\n", ascii_art);
+
+    // Clean up
+    free(ascii_art);
     free(Resized_img);
     free(grey_img);
     stbi_image_free(Img);
 
 
 
-    
 
     return 0;
 }
